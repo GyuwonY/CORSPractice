@@ -7,6 +7,7 @@ import com.sparta.corspractice.security.provider.FormLoginAuthProvider;
 import com.sparta.corspractice.security.provider.JWTAuthProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
@@ -19,6 +20,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.ArrayList;
@@ -68,7 +70,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .disable();
 
         // 서버에서 인증은 JWT로 인증하기 때문에 Session의 생성을 막습니다.
-        http    .cors().configurationSource(corsConfigurationSource())
+        http
+                .httpBasic().disable()
+                .cors()
                 .and()
                 .sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
@@ -84,6 +88,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class);
 
         http.authorizeRequests()
+                //.antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .anyRequest()
                 .permitAll()
                 .and()
@@ -116,6 +121,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     public FormLoginAuthProvider formLoginAuthProvider() {
         return new FormLoginAuthProvider(encodePassword());
     }
+
 
     private JwtAuthFilter jwtFilter() throws Exception {
         List<String> skipPathList = new ArrayList<>();
@@ -158,15 +164,4 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         return super.authenticationManagerBean();
     }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource(){
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowCredentials(true); // 내 서버가 응답을 할 때 json을 JS에서 처리할 수 있게 설정
-        config.addAllowedOrigin("*"); // 모든 ip 에 응답을 허용
-        config.addAllowedHeader("*"); // 모든 header에 응답을 허용
-        config.addAllowedMethod("*"); // 모든 post, get, put, delete, patch 요청을 허용
-        source.registerCorsConfiguration("/**",config);
-        return source;
-    }
 }
